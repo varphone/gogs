@@ -8,7 +8,9 @@ import (
 	"bytes"
 	"fmt"
 	gotemplate "html/template"
+	"net/url"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -33,6 +35,23 @@ const (
 	WATCHERS = "repo/watchers"
 	FORKS    = "repo/forks"
 )
+
+func replaceVariables(buf []byte, vars map[string][]byte) []byte {
+	r, _ := regexp.Compile("{{\\s?([0-9,A-Z_]+)(:[%]+)?\\s?}}");
+	matches := r.FindAllSubmatch(buf, -1)
+	for _, v := range matches {
+		k := string(v[1])
+		p := string(v[2])
+		if val, found := vars[k]; found {
+			for i := 1; i < len(p); i++ {
+				val = []byte(url.PathEscape(string(val)))
+			}
+			buf = bytes.ReplaceAll(buf, v[0], val)
+			delete(vars, k)
+		}
+	}
+	return buf
+}
 
 func renderDirectory(c *context.Context, treeLink string) {
 	tree, err := c.Repo.Commit.Subtree(c.Repo.TreePath)
@@ -86,6 +105,10 @@ func renderDirectory(c *context.Context, treeLink string) {
 		if isTextFile {
 			switch markup.Detect(readmeFile.Name()) {
 			case markup.MARKDOWN:
+				vars := map[string][]byte {
+						"BRANCH_NAME": []byte(c.Repo.BranchName),
+				}
+				p = replaceVariables(p, vars)
 				c.Data["IsMarkdown"] = true
 				p = markup.Markdown(p, treeLink, c.Repo.Repository.ComposeMetas())
 			case markup.ORG_MODE:
@@ -155,6 +178,10 @@ func renderFile(c *context.Context, entry *git.TreeEntry, treeLink, rawLink stri
 
 		switch markup.Detect(blob.Name()) {
 		case markup.MARKDOWN:
+			vars := map[string][]byte {
+					"BRANCH_NAME": []byte(c.Repo.BranchName),
+			}
+			p = replaceVariables(p, vars)
 			c.Data["IsMarkdown"] = true
 			c.Data["FileContent"] = string(markup.Markdown(p, path.Dir(treeLink), c.Repo.Repository.ComposeMetas()))
 		case markup.ORG_MODE:
