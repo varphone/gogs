@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/fcgi"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -152,6 +153,18 @@ func newMacaron() *macaron.Macaron {
 			},
 		},
 	}))
+	// Dynamic virtual root supports
+	m.Use(func(ctx *macaron.Context) {
+		s := ctx.Req.Header.Get("X-Base-Url")
+		u, err := url.Parse(s)
+		if len(s) > 0 && err == nil {
+			conf.Server.ExternalURL = s
+			conf.Server.Subpath = strings.TrimRight(u.Path, "/")
+		} else {
+			conf.Server.ExternalURL = conf.Server.ExternalURLOrig;
+			conf.Server.Subpath = conf.Server.SubpathOrig;
+		}
+	})
 	return m
 }
 
