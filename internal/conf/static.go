@@ -387,6 +387,10 @@ type ServerOpts struct {
 	RootURL string `ini:"ROOT_URL"`
 	// Deprecated: Use LandingURL instead, will be removed in 0.13.
 	LangdingPage string `ini:"LANDING_PAGE"`
+
+	// Save the origin values for dynamic virtual root supports
+	ExternalURLOrig	string
+	SubpathOrig	string
 }
 
 // Server settings
