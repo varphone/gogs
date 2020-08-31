@@ -123,6 +123,9 @@ func Init(customConf string) error {
 	}
 	Server.UnixSocketMode = os.FileMode(unixSocketMode)
 
+	Server.ExternalURLOrig = Server.ExternalURL;
+	Server.SubpathOrig = Server.Subpath;
+
 	// ************************
 	// ----- SSH settings -----
 	// ************************
